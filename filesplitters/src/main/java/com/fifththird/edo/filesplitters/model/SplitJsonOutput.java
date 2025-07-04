@@ -12,12 +12,12 @@ public class SplitJsonOutput {
     /**
      * The S3 file containing the split JSON fragments.
      */
-    private S3File s3File;
+    private S3File outputFileData;
     
     /**
-     * Key prefix for state files related to this splitting operation.
+     * S3 file data for state files related to this splitting operation.
      */
-    private String stateFileKeyPrefix;
+    private S3File stateFileData;
     
     /**
      * Total record count across all files.
@@ -33,13 +33,13 @@ public class SplitJsonOutput {
     /**
      * Constructor with all fields.
      * 
-     * @param s3File the S3 file containing split JSON fragments
-     * @param stateFileKeyPrefix key prefix for state files
+     * @param outputFileData the S3 file containing split JSON fragments
+     * @param stateFileData S3 file data for state files
      * @param recordCount total record count across all files
      */
-    public SplitJsonOutput(S3File s3File, String stateFileKeyPrefix, Long recordCount) {
-        this.s3File = s3File;
-        this.stateFileKeyPrefix = stateFileKeyPrefix;
+    public SplitJsonOutput(S3File outputFileData, S3File stateFileData, Long recordCount) {
+        this.outputFileData = outputFileData;
+        this.stateFileData = stateFileData;
         this.recordCount = recordCount;
     }
     
@@ -48,35 +48,35 @@ public class SplitJsonOutput {
      * 
      * @return the S3 file
      */
-    public S3File getS3File() {
-        return s3File;
+    public S3File getOutputFileData() {
+        return outputFileData;
     }
     
     /**
      * Sets the S3 file containing the split JSON fragments.
      * 
-     * @param s3File the S3 file to set
+     * @param outputFileData the S3 file to set
      */
-    public void setS3File(S3File s3File) {
-        this.s3File = s3File;
+    public void setOutputFileData(S3File outputFileData) {
+        this.outputFileData = outputFileData;
     }
     
     /**
-     * Gets the key prefix for state files.
+     * Gets the S3 file data for state files.
      * 
-     * @return the state file key prefix
+     * @return the state file data
      */
-    public String getStateFileKeyPrefix() {
-        return stateFileKeyPrefix;
+    public S3File getStateFileData() {
+        return stateFileData;
     }
     
     /**
-     * Sets the key prefix for state files.
+     * Sets the S3 file data for state files.
      * 
-     * @param stateFileKeyPrefix the state file key prefix to set
+     * @param stateFileData the state file data to set
      */
-    public void setStateFileKeyPrefix(String stateFileKeyPrefix) {
-        this.stateFileKeyPrefix = stateFileKeyPrefix;
+    public void setStateFileData(S3File stateFileData) {
+        this.stateFileData = stateFileData;
     }
     
     /**
@@ -100,8 +100,8 @@ public class SplitJsonOutput {
     @Override
     public String toString() {
         return "SplitJsonOutput{" +
-                "s3File=" + s3File +
-                ", stateFileKeyPrefix='" + stateFileKeyPrefix + '\'' +
+                "outputFileData=" + outputFileData +
+                ", stateFileData=" + stateFileData +
                 ", recordCount=" + recordCount +
                 '}';
     }
@@ -113,16 +113,16 @@ public class SplitJsonOutput {
         
         SplitJsonOutput that = (SplitJsonOutput) o;
         
-        if (s3File != null ? !s3File.equals(that.s3File) : that.s3File != null) return false;
-        if (stateFileKeyPrefix != null ? !stateFileKeyPrefix.equals(that.stateFileKeyPrefix) : that.stateFileKeyPrefix != null)
+        if (outputFileData != null ? !outputFileData.equals(that.outputFileData) : that.outputFileData != null) return false;
+        if (stateFileData != null ? !stateFileData.equals(that.stateFileData) : that.stateFileData != null)
             return false;
         return recordCount != null ? recordCount.equals(that.recordCount) : that.recordCount == null;
     }
     
     @Override
     public int hashCode() {
-        int result = s3File != null ? s3File.hashCode() : 0;
-        result = 31 * result + (stateFileKeyPrefix != null ? stateFileKeyPrefix.hashCode() : 0);
+        int result = outputFileData != null ? outputFileData.hashCode() : 0;
+        result = 31 * result + (stateFileData != null ? stateFileData.hashCode() : 0);
         result = 31 * result + (recordCount != null ? recordCount.hashCode() : 0);
         return result;
     }
