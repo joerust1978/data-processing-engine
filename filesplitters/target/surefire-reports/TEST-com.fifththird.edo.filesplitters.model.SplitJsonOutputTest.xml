@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.fifththird.edo.filesplitters.model.SplitJsonInputTest" time="0.006" tests="3" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.085" tests="16" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="24"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -58,7 +58,20 @@
     <property name="socksNonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.class.version" value="68.0"/>
   </properties>
-  <testcase name="testDefaultConstructorAndSetters" classname="com.fifththird.edo.filesplitters.model.SplitJsonInputTest" time="0.001"/>
-  <testcase name="testToString" classname="com.fifththird.edo.filesplitters.model.SplitJsonInputTest" time="0.002"/>
-  <testcase name="testEqualsAndHashCode" classname="com.fifththird.edo.filesplitters.model.SplitJsonInputTest" time="0.001"/>
+  <testcase name="testEquals_DifferentClass" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.031"/>
+  <testcase name="testEquals_NullFields" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.002"/>
+  <testcase name="testToString_NullFields" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.003"/>
+  <testcase name="testEquals_NullObject" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.001"/>
+  <testcase name="testParameterizedConstructor" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.002"/>
+  <testcase name="testToString" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.003"/>
+  <testcase name="testEquals_MixedNullFields" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.001"/>
+  <testcase name="testSettersAndGetters" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.001"/>
+  <testcase name="testEquals_SameObject" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.001"/>
+  <testcase name="testEquals_DifferentS3File" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.001"/>
+  <testcase name="testEquals_DifferentRecordCount" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.001"/>
+  <testcase name="testEquals_DifferentStateFileKeyPrefix" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.0"/>
+  <testcase name="testEquals_EqualObjects" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.0"/>
+  <testcase name="testHashCode_NullFields" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.001"/>
+  <testcase name="testHashCode_EqualObjects" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.001"/>
+  <testcase name="testDefaultConstructor" classname="com.fifththird.edo.filesplitters.model.SplitJsonOutputTest" time="0.002"/>
 </testsuite>
