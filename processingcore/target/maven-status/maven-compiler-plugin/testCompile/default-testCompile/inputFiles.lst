@@ -1,0 +1,10 @@
+/Users/josephrust/git-projects/data-processing-engine/processingcore/src/test/java/com/fifththird/edo/processingcore/util/PgpUtilitiesTest.java
+/Users/josephrust/git-projects/data-processing-engine/processingcore/src/test/java/com/fifththird/edo/processingcore/ProcessingCoreApplicationTest.java
+/Users/josephrust/git-projects/data-processing-engine/processingcore/src/test/java/com/fifththird/edo/processingcore/model/S3FileTest.java
+/Users/josephrust/git-projects/data-processing-engine/processingcore/src/test/java/com/fifththird/edo/processingcore/lambda/StepFunctionSqsLambdaHandlerTest.java
+/Users/josephrust/git-projects/data-processing-engine/processingcore/src/test/java/com/fifththird/edo/processingcore/model/S3FileProcessorDefinitionTest.java
+/Users/josephrust/git-projects/data-processing-engine/processingcore/src/test/java/com/fifththird/edo/processingcore/exception/DataProcessingExceptionTest.java
+/Users/josephrust/git-projects/data-processing-engine/processingcore/src/test/java/com/fifththird/edo/processingcore/lambda/SQSEventLambdaHandlerTest.java
+/Users/josephrust/git-projects/data-processing-engine/processingcore/src/test/java/com/fifththird/edo/processingcore/ProcessingCoreApplicationTests.java
+/Users/josephrust/git-projects/data-processing-engine/processingcore/src/test/java/com/fifththird/edo/processingcore/model/StepFunctionInputTest.java
+/Users/josephrust/git-projects/data-processing-engine/processingcore/src/test/java/com/fifththird/edo/processingcore/lambda/SqsSnsEventLambdaHandlerTest.java
