@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fifththird.edo.filesplitters.model.SplitJsonInput;
+import com.fifththird.edo.filesplitters.model.SplitJsonOutput;
 import com.fifththird.edo.processingcore.exception.DataProcessingException;
 import com.fifththird.edo.processingcore.lambda.StepFunctionSqsLambdaHandler;
 import com.fifththird.edo.processingcore.model.S3File;
@@ -33,6 +34,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -40,9 +42,9 @@ import java.util.zip.GZIPOutputStream;
  * Lambda handler for splitting JSON files based on SQS events with Step Function integration.
  * Extends StepFunctionSqsLambdaHandler to process SQS messages containing SplitJsonInput data
  * and automatically handle Step Function success/failure notifications.
- * Both input and output types are SplitJsonInput for this implementation.
+ * Input type is SplitJsonInput and output type is SplitJsonOutput for this implementation.
  */
-public class SplitJsonFileHandler extends StepFunctionSqsLambdaHandler<SplitJsonInput, SplitJsonInput> {
+public class SplitJsonFileHandler extends StepFunctionSqsLambdaHandler<SplitJsonInput, SplitJsonOutput> {
 
     private static final Logger logger = LoggerFactory.getLogger(SplitJsonFileHandler.class);
     
@@ -91,10 +93,10 @@ public class SplitJsonFileHandler extends StepFunctionSqsLambdaHandler<SplitJson
      * and writes the fragments back to S3.
      * 
      * @param input the parsed SplitJsonInput data
-     * @return the processing result (SplitJsonInput with updated information)
+     * @return the processing result (SplitJsonOutput with output information)
      */
     @Override
-    protected SplitJsonInput processSqsTypeInternal(SplitJsonInput input) {
+    protected SplitJsonOutput processSqsTypeInternal(SplitJsonInput input) {
         logger.info("Starting JSON file splitting process for input: {}", input);
         try {
             validateInput(input);
@@ -165,8 +167,22 @@ public class SplitJsonFileHandler extends StepFunctionSqsLambdaHandler<SplitJson
             }
             totalFragments = fragmentIndex;
             logger.info("Successfully split file into {} fragments ({} objects)", totalFragments, totalObjects);
-            input.setRecordsPerSplit(totalFragments);
-            return input;
+            
+            // Create SplitJsonOutput with the results
+            SplitJsonOutput output = new SplitJsonOutput();
+            output.setOutputFileData(outputFile);
+            output.setRecordCount((long) totalObjects);
+            
+            // Create state file data (using the output file as base but with state prefix)
+            S3File stateFileData = S3File.builder()
+                    .bucket(outputFile.getBucket())
+                    .fileKey(outputFile.getFileKey() + "state/")
+                    .gzipped(outputFile.isGzipped())
+                    .pgpEncrypted(outputFile.isPgpEncrypted())
+                    .build();
+            output.setStateFileData(stateFileData);
+            
+            return output;
         } catch (Exception e) {
             logger.error("Failed to process JSON file splitting", e);
             throw new DataProcessingException("Failed to process JSON file splitting", e);
@@ -221,6 +237,28 @@ public class SplitJsonFileHandler extends StepFunctionSqsLambdaHandler<SplitJson
             RequestBody requestBody = RequestBody.fromInputStream(inputStream, content.length);
             s3Client.putObject(putObjectRequest, requestBody);
             logger.debug("Successfully uploaded fragment {} to S3: {}", fragmentIndex, fragmentKey);
+            
+            // Create S3File object for this fragment
+            S3File fragmentS3File = S3File.builder()
+                    .bucket(s3File.getBucket())
+                    .fileKey(s3File.getFileKey() + "state/" + fragmentIndex)
+                    .gzipped(false)
+                    .pgpEncrypted(false)
+                    .build();
+            
+            // Serialize the S3File object to JSON string
+            String fragmentJson = objectMapper.writeValueAsString(fragmentS3File);
+            
+            // Write the JSON string to S3 with state/ prefix and fragment index
+            String stateKey = s3File.getFileKey() + "state/" + fragmentIndex;
+            PutObjectRequest statePutRequest = PutObjectRequest.builder()
+                    .bucket(s3File.getBucket())
+                    .key(stateKey)
+                    .contentType("application/json")
+                    .build();
+            RequestBody stateRequestBody = RequestBody.fromString(fragmentJson);
+            s3Client.putObject(statePutRequest, stateRequestBody);
+            logger.debug("Successfully uploaded fragment state JSON to S3: {}", stateKey);
         } catch (IOException e) {
             logger.error("Failed to write fragment to S3", e);
             throw new DataProcessingException("Failed to write fragment to S3", e);

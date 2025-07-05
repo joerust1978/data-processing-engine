@@ -86,13 +86,16 @@ class SplitJsonFileHandlerTest {
         SQSEvent sqsEvent = createTestSQSEvent(2); // split every 2 records
         String result = handler.handleRequest(sqsEvent, mockContext);
         assertNotNull(result);
-        assertTrue(result.contains("recordsPerSplit"));
-        // Verify that S3 putObject was called twice (4 objects, 2 per fragment)
+        // Check that the result contains the expected SplitJsonOutput fields
+        assertTrue(result.contains("outputFileData"));
+        assertTrue(result.contains("stateFileData"));
+        assertTrue(result.contains("recordCount"));
+        // Verify that S3 putObject was called 4 times (2 fragments + 2 state files)
         ArgumentCaptor<PutObjectRequest> putCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
         ArgumentCaptor<RequestBody> bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
-        Mockito.verify(mockS3Client, Mockito.times(2)).putObject(putCaptor.capture(), bodyCaptor.capture());
-        // Optionally, check the keys or content of the fragments
-        assertEquals(2, putCaptor.getAllValues().size());
+        Mockito.verify(mockS3Client, Mockito.times(4)).putObject(putCaptor.capture(), bodyCaptor.capture());
+        // Check that we have 4 putObject calls: 2 fragments + 2 state files
+        assertEquals(4, putCaptor.getAllValues().size());
     }
 
     @Test
@@ -125,7 +128,7 @@ class SplitJsonFileHandlerTest {
         SQSEvent sqsEvent = createTestSQSEventWithGzip(true, false);
         String result = handler.handleRequest(sqsEvent, mockContext);
         assertNotNull(result);
-        verify(mockS3Client, times(1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+        verify(mockS3Client, times(2)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
     @Test
@@ -133,7 +136,7 @@ class SplitJsonFileHandlerTest {
         SQSEvent sqsEvent = createTestSQSEventWithGzip(false, true);
         String result = handler.handleRequest(sqsEvent, mockContext);
         assertNotNull(result);
-        verify(mockS3Client, times(2)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+        verify(mockS3Client, times(4)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
     // PGP Encryption Tests
@@ -154,6 +157,7 @@ class SplitJsonFileHandlerTest {
         String result = handler.handleRequest(sqsEvent, mockContext);
         assertNotNull(result);
         verify(mockPgpUtilities).wrapWithDecryption(any(InputStream.class), anyString(), anyString());
+        verify(mockS3Client, times(2)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
     @Test
@@ -167,6 +171,7 @@ class SplitJsonFileHandlerTest {
         String result = handler.handleRequest(sqsEvent, mockContext);
         assertNotNull(result);
         verify(mockPgpUtilities, times(2)).wrapWithEncryption(any(ByteArrayOutputStream.class), anyString());
+        verify(mockS3Client, times(4)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
     @Test
@@ -221,7 +226,7 @@ class SplitJsonFileHandlerTest {
         SQSEvent sqsEvent = createTestSQSEvent(1);
         String result = handler.handleRequest(sqsEvent, mockContext);
         assertNotNull(result);
-        verify(mockS3Client, times(1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+        verify(mockS3Client, times(2)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
     @Test
@@ -249,7 +254,7 @@ class SplitJsonFileHandlerTest {
         SQSEvent sqsEvent = createTestSQSEvent(10); // More than available objects
         String result = handler.handleRequest(sqsEvent, mockContext);
         assertNotNull(result);
-        verify(mockS3Client, times(1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+        verify(mockS3Client, times(2)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
     // Error Handling Tests
@@ -318,6 +323,125 @@ class SplitJsonFileHandlerTest {
 
         SplitJsonInput input = createTestInputWithPgp(true, true);
         assertThrows(DataProcessingException.class, () -> handler.processSqsTypeInternal(input));
+    }
+
+    // Fragment State File Tests
+    @Test
+    void testHandleRequest_CreatesFragmentStateFiles() {
+        SQSEvent sqsEvent = createTestSQSEvent(2); // split every 2 records
+        String result = handler.handleRequest(sqsEvent, mockContext);
+        assertNotNull(result);
+        
+        // Verify that S3 putObject was called for both fragments and their state files
+        ArgumentCaptor<PutObjectRequest> putCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        ArgumentCaptor<RequestBody> bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+        Mockito.verify(mockS3Client, Mockito.times(4)).putObject(putCaptor.capture(), bodyCaptor.capture());
+        
+        // Check that we have 4 putObject calls: 2 fragments + 2 state files
+        assertEquals(4, putCaptor.getAllValues().size());
+        
+        // Verify the state file keys contain "state/" and fragment indices
+        boolean foundStateFile0 = false;
+        boolean foundStateFile1 = false;
+        
+        for (PutObjectRequest request : putCaptor.getAllValues()) {
+            if (request.key().contains("state/0")) {
+                foundStateFile0 = true;
+                assertEquals("application/json", request.contentType());
+            }
+            if (request.key().contains("state/1")) {
+                foundStateFile1 = true;
+                assertEquals("application/json", request.contentType());
+            }
+        }
+        
+        assertTrue(foundStateFile0, "State file for fragment 0 should be created");
+        assertTrue(foundStateFile1, "State file for fragment 1 should be created");
+    }
+
+    @Test
+    void testHandleRequest_FragmentStateFileContent() {
+        SQSEvent sqsEvent = createTestSQSEvent(2); // split every 2 records
+        String result = handler.handleRequest(sqsEvent, mockContext);
+        assertNotNull(result);
+        
+        // Capture all putObject calls
+        ArgumentCaptor<PutObjectRequest> putCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        ArgumentCaptor<RequestBody> bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+        Mockito.verify(mockS3Client, Mockito.times(4)).putObject(putCaptor.capture(), bodyCaptor.capture());
+        
+        // Find the state file requests and verify their content
+        for (int i = 0; i < putCaptor.getAllValues().size(); i++) {
+            PutObjectRequest request = putCaptor.getAllValues().get(i);
+            
+            if (request.key().contains("state/") && "application/json".equals(request.contentType())) {
+                // Verify the state file key contains the expected pattern
+                assertTrue(request.key().contains("state/"), "State file key should contain state/");
+                assertTrue(request.key().matches(".*state/\\d+"), "State file key should end with state/fragmentIndex");
+                assertEquals("test-bucket", request.bucket(), "State file should use correct bucket");
+            }
+        }
+    }
+
+    @Test
+    void testHandleRequest_FragmentStateFileKeys() {
+        SQSEvent sqsEvent = createTestSQSEvent(1); // split every 1 record (4 fragments)
+        String result = handler.handleRequest(sqsEvent, mockContext);
+        assertNotNull(result);
+        
+        // Verify that S3 putObject was called for all fragments and their state files
+        ArgumentCaptor<PutObjectRequest> putCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        Mockito.verify(mockS3Client, Mockito.times(8)).putObject(putCaptor.capture(), any(RequestBody.class));
+        
+        // Check that state file keys follow the expected pattern
+        boolean foundState0 = false, foundState1 = false, foundState2 = false, foundState3 = false;
+        
+        for (PutObjectRequest request : putCaptor.getAllValues()) {
+            String key = request.key();
+            if (key.contains("state/0")) foundState0 = true;
+            if (key.contains("state/1")) foundState1 = true;
+            if (key.contains("state/2")) foundState2 = true;
+            if (key.contains("state/3")) foundState3 = true;
+        }
+        
+        assertTrue(foundState0, "Should create state file for fragment 0");
+        assertTrue(foundState1, "Should create state file for fragment 1");
+        assertTrue(foundState2, "Should create state file for fragment 2");
+        assertTrue(foundState3, "Should create state file for fragment 3");
+    }
+
+    @Test
+    void testHandleRequest_StateFileBucketMatchesInput() {
+        SQSEvent sqsEvent = createTestSQSEvent(2); // split every 2 records
+        String result = handler.handleRequest(sqsEvent, mockContext);
+        assertNotNull(result);
+        
+        // Verify that all state files use the same bucket as the input
+        ArgumentCaptor<PutObjectRequest> putCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        Mockito.verify(mockS3Client, Mockito.times(4)).putObject(putCaptor.capture(), any(RequestBody.class));
+        
+        for (PutObjectRequest request : putCaptor.getAllValues()) {
+            if (request.key().contains("state/")) {
+                assertEquals("test-bucket", request.bucket(), "State file should use same bucket as input");
+            }
+        }
+    }
+
+    @Test
+    void testHandleRequest_StateFileContentType() {
+        SQSEvent sqsEvent = createTestSQSEvent(2); // split every 2 records
+        String result = handler.handleRequest(sqsEvent, mockContext);
+        assertNotNull(result);
+        
+        // Verify that state files have correct content type
+        ArgumentCaptor<PutObjectRequest> putCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        Mockito.verify(mockS3Client, Mockito.times(4)).putObject(putCaptor.capture(), any(RequestBody.class));
+        
+        for (PutObjectRequest request : putCaptor.getAllValues()) {
+            if (request.key().contains("state/")) {
+                assertEquals("application/json", request.contentType(), "State files should have JSON content type");
+            }
+        }
     }
 
     // Helper methods for creating test events
