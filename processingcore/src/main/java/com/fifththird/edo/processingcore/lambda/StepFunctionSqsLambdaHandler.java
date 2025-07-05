@@ -1,6 +1,5 @@
 package com.fifththird.edo.processingcore.lambda;
 
-import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fifththird.edo.processingcore.exception.DataProcessingException;
 import org.slf4j.Logger;
