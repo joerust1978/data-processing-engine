@@ -73,48 +73,7 @@ public abstract class SQSEventLambdaHandler<T, R> implements RequestHandler<SQSE
         }
     }
 
-    /**
-     * Processes an individual SQS message.
-     * 
-     * @param message the SQS message to process
-     * @param context the Lambda execution context
-     * @return the processing result
-     */
-    private R processMessage(SQSEvent.SQSMessage message, Context context) {
-        try {
-            logger.debug("Processing message: {}", message.getMessageId());
-            
-            // Extract message body
-            String messageBody = message.getBody();
-            logger.debug("Message body: {}", messageBody);
-            
-            // Parse the message body to extract input data
-            T inputData = parseMessage(messageBody);
-            
-            // Process the input data using the abstract method
-            R result = processSqsTypeInternal(inputData);
-            
-            // Handle the result after processing
-            handleResult(inputData, result);
-            
-            logger.debug("Successfully processed message: {}", message.getMessageId());
-            return result;
-            
-        } catch (DataProcessingException e) {
-            // Re-throw DataProcessingException directly
-            throw e;
-        } catch (Exception e) {
-            logger.error("Error processing message: {}", message.getMessageId(), e);
-            // Create a DataProcessingException and throw it
-            DataProcessingException dataProcessingException = new DataProcessingException("Failed to process message: " + message.getMessageId(), e);
-            
-            // Depending on your error handling strategy, you might want to:
-            // - Return null or a default result to continue processing other messages
-            // - Re-throw the exception to trigger Lambda retry
-            // - Send the message to a DLQ (Dead Letter Queue)
-            throw dataProcessingException;
-        }
-    }
+
 
     /**
      * Parse the SQS message body to extract input data of type T using Jackson.
