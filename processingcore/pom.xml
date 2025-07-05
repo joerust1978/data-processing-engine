@@ -97,6 +97,18 @@
             <artifactId>pgpainless-core</artifactId>
             <version>1.7.6</version>
         </dependency>
+
+        <!-- AWS Transfer Manager for efficient S3 transfers -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3-transfer-manager</artifactId>
+        </dependency>
+
+        <!-- AWS CRT for native performance -->
+        <dependency>
+            <groupId>software.amazon.awssdk.crt</groupId>
+            <artifactId>aws-crt</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
