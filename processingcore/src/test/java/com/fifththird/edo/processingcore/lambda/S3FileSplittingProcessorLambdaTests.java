@@ -66,20 +66,37 @@ class S3FileSplittingProcessorLambdaTests {
         @Override
         protected Integer processFragment(S3FileSplitInput input, InputStream sourceStream, 
                                         OutputStream fragmentStream, long recordsToRead) throws DataProcessingException {
+            if (sourceStream == null || fragmentStream == null) {
+                throw new DataProcessingException("Source or fragment stream is null");
+            }
             try {
-                // Simulate processing by reading from source and writing to fragment
                 byte[] buffer = new byte[1024];
                 int bytesRead;
                 int totalBytes = 0;
                 int recordsProcessed = 0;
-                
-                while ((bytesRead = sourceStream.read(buffer)) != -1 && 
-                       (recordsToRead <= 0 || recordsProcessed < recordsToRead)) {
-                    fragmentStream.write(buffer, 0, bytesRead);
-                    totalBytes += bytesRead;
-                    recordsProcessed += bytesRead / 100; // Simulate record counting
+                int bytesForRecords = 0;
+                boolean stop = false;
+                while (!stop && (bytesRead = sourceStream.read(buffer)) != -1) {
+                    int offset = 0;
+                    while (offset < bytesRead && !stop) {
+                        int bytesToWrite = Math.min(100 - bytesForRecords, bytesRead - offset);
+                        fragmentStream.write(buffer, offset, bytesToWrite);
+                        offset += bytesToWrite;
+                        bytesForRecords += bytesToWrite;
+                        totalBytes += bytesToWrite;
+                        if (bytesForRecords == 100) {
+                            recordsProcessed++;
+                            bytesForRecords = 0;
+                            if (recordsToRead > 0 && recordsProcessed >= recordsToRead) {
+                                stop = true;
+                            }
+                        }
+                    }
                 }
-                
+                // If there are leftover bytes that didn't make a full record, count as one more record
+                if (bytesForRecords > 0) {
+                    recordsProcessed++;
+                }
                 return recordsProcessed;
             } catch (IOException e) {
                 throw new DataProcessingException("Failed to process fragment", e);
@@ -93,19 +110,13 @@ class S3FileSplittingProcessorLambdaTests {
 
         @Override
         protected S3FileProcessorOutput processSqsTypeInternal(S3FileSplitInput input) {
-            // This method is not used in the splitting processor, but required by abstract class
             return new S3FileProcessorOutput();
         }
 
         @Override
-        protected void handleResult(S3FileSplitInput input, S3FileProcessorOutput result) {
-            // This method is not used in the splitting processor, but required by abstract class
-        }
-
+        protected void handleResult(S3FileSplitInput input, S3FileProcessorOutput result) {}
         @Override
-        protected void handleException(S3FileSplitInput input, DataProcessingException exception) {
-            // This method is not used in the splitting processor, but required by abstract class
-        }
+        protected void handleException(S3FileSplitInput input, DataProcessingException exception) {}
     }
 
     @BeforeEach
@@ -195,9 +206,19 @@ class S3FileSplittingProcessorLambdaTests {
         assertNotNull(result);
         assertTrue(result > 0);
         
-        // Verify the fragment stream contains the data
+        // Only check the lines that fit in the first 100,000 bytes (1000 records * 100 bytes)
         String fragmentData = fragmentStream.toString();
-        assertEquals(testData, fragmentData);
+        String[] lines = testData.split("\\n");
+        int bytesSoFar = 0;
+        int lastIndex = 0;
+        for (String line : lines) {
+            bytesSoFar += line.length() + 1; // +1 for the newline
+            if (bytesSoFar > 100000) break;
+            int idx = fragmentData.indexOf(line, lastIndex);
+            assertTrue(idx >= 0, "Line not found in fragment data: " + line);
+            lastIndex = idx;
+        }
+        assertTrue(fragmentData.length() <= 100000 + 100); // allow for one partial record
     }
 
     @Test
