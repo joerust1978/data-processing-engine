@@ -1,6 +1,5 @@
 package com.fifththird.edo.filesplitters.model;
 
-import com.fifththird.edo.processingcore.model.S3File;
 import com.fifththird.edo.processingcore.model.S3FileProcessorDefinition;
 
 /**
