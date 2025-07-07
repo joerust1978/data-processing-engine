@@ -95,7 +95,6 @@
 
     <build>
         <plugins>
-            <!-- Removed spring-boot-maven-plugin -->
         </plugins>
     </build>
 </project> 
