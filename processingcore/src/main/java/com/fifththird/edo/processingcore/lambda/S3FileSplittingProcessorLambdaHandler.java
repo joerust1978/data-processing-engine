@@ -1,6 +1,7 @@
 package com.fifththird.edo.processingcore.lambda;
 
-import com.fifththird.edo.processingcore.model.S3FileProcessorOutput;
+import com.fifththird.edo.processingcore.model.S3FileSplitOutput;
+import com.fifththird.edo.processingcore.model.S3File;
 import com.fifththird.edo.processingcore.model.S3FileSplitInput;
 import com.fifththird.edo.processingcore.exception.DataProcessingException;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -27,9 +28,9 @@ import software.amazon.awssdk.transfer.s3.model.Upload;
  * for file splitting operations with S3FileSplitInput and S3FileProcessorOutput.
  * 
  * @param <T> The type of the input data, must extend S3FileSplitInput
- * @param <R> The type of the result data, must extend S3FileProcessorOutput
+ * @param <R> The type of the result data, must extend S3FileSplitOutput
  */
-public abstract class S3FileSplittingProcessorLambdaHandler<T extends S3FileSplitInput, R extends S3FileProcessorOutput> 
+public abstract class S3FileSplittingProcessorLambdaHandler<T extends S3FileSplitInput, R extends S3FileSplitOutput> 
         extends S3FileProcessorLambdaHandler<T, R> {
 
     private static final Logger logger = LoggerFactory.getLogger(S3FileSplittingProcessorLambdaHandler.class);
@@ -75,6 +76,12 @@ public abstract class S3FileSplittingProcessorLambdaHandler<T extends S3FileSpli
             // Create a LinkedBlockingQueue with Integer type and capacity of 1,000,000
             LinkedBlockingQueue<Integer> queue = new LinkedBlockingQueue<>(1000000);
             
+            // Variable to track total records read across all fragments
+            long totalRecordsRead = 0;
+            
+            // Variable to track total fragments created
+            long totalFragmentsCreated = 0;
+            
             // Process the stream in fragments
             while (s3ObjectStream.available() > 0) {
                 // Create a QueueOutputStream for the current fragment with the bounded queue
@@ -119,12 +126,21 @@ public abstract class S3FileSplittingProcessorLambdaHandler<T extends S3FileSpli
                 // Call the upload completionFuture method and join on it
                 upload.completionFuture().join();
                 
+                // Increment counters for tracking
+                totalFragmentsCreated++;
+                totalRecordsRead += result;
+                
                 // Log the fragment processing
                 logger.debug("Processed fragment with QueueOutputStream, records processed: {}", result);
             }
             
-            // Return a default result (subclasses should override this method for custom logic)
-            throw new DataProcessingException("processS3Object method should be overridden by subclasses for custom result handling");
+            // Create and return the result object
+            R result = createResultInstance();
+            result.setTotalRecordsProcessed(totalRecordsRead);
+            result.setTotalFileFragments(totalFragmentsCreated);
+            result.setSplitMetadata(S3File.builder().bucket(input.getOutputFile().getBucket()).fileKey(input.getOutputFile().getFileKey() + "metadata/").build());
+            result.setOutputFile(input.getOutputFile());
+            return result;
             
         } catch (Exception e) {
             logger.error("Error while processing S3 object for splitting", e);
@@ -145,4 +161,15 @@ public abstract class S3FileSplittingProcessorLambdaHandler<T extends S3FileSpli
      * @throws DataProcessingException if processing fails
      */
     protected abstract Integer processFragment(T input, InputStream sourceStream, OutputStream fragmentStream, long recordsToRead) throws DataProcessingException;
+    
+    /**
+     * Create a result object instance of type R with the processing statistics.
+     * This method must be implemented by subclasses to provide specific result creation logic.
+     * 
+     * @param totalRecordsRead the total number of records processed
+     * @param totalFragmentsCreated the total number of fragments created
+     * @return the result object of type R
+     * @throws DataProcessingException if result creation fails
+     */
+    protected abstract R createResultInstance() throws DataProcessingException;
 } 

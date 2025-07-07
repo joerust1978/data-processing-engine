@@ -2,7 +2,7 @@ package com.fifththird.edo.processingcore.lambda;
 
 import com.fifththird.edo.processingcore.exception.DataProcessingException;
 import com.fifththird.edo.processingcore.model.S3File;
-import com.fifththird.edo.processingcore.model.S3FileProcessorOutput;
+import com.fifththird.edo.processingcore.model.S3FileSplitOutput;
 import com.fifththird.edo.processingcore.model.S3FileSplitInput;
 import com.fifththird.edo.processingcore.util.PgpUtilities;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +55,7 @@ class S3FileSplittingProcessorLambdaTests {
      * Concrete implementation of S3FileSplittingProcessorLambdaHandler for testing.
      */
     private static class TestS3FileSplittingProcessorLambdaHandler 
-            extends S3FileSplittingProcessorLambdaHandler<S3FileSplitInput, S3FileProcessorOutput> {
+            extends S3FileSplittingProcessorLambdaHandler<S3FileSplitInput, S3FileSplitOutput> {
 
         public TestS3FileSplittingProcessorLambdaHandler(SfnClient sfnClient, S3Client s3Client, 
                                                         PgpUtilities pgpUtilities, ExecutorService executorService, 
@@ -109,14 +109,19 @@ class S3FileSplittingProcessorLambdaTests {
         }
 
         @Override
-        protected S3FileProcessorOutput processSqsTypeInternal(S3FileSplitInput input) {
-            return new S3FileProcessorOutput();
+        protected S3FileSplitOutput processSqsTypeInternal(S3FileSplitInput input) {
+            return new S3FileSplitOutput();
         }
 
         @Override
-        protected void handleResult(S3FileSplitInput input, S3FileProcessorOutput result) {}
+        protected void handleResult(S3FileSplitInput input, S3FileSplitOutput result) {}
         @Override
         protected void handleException(S3FileSplitInput input, DataProcessingException exception) {}
+        
+        @Override
+        protected S3FileSplitOutput createResultInstance() throws DataProcessingException {
+            return new S3FileSplitOutput();
+        }
     }
 
     @BeforeEach
@@ -298,13 +303,13 @@ class S3FileSplittingProcessorLambdaTests {
 
     @Test
     void testProcessSqsTypeInternal() {
-        S3FileProcessorOutput result = handler.processSqsTypeInternal(testInput);
+        S3FileSplitOutput result = handler.processSqsTypeInternal(testInput);
         assertNotNull(result);
     }
 
     @Test
     void testHandleResult() {
-        S3FileProcessorOutput result = new S3FileProcessorOutput();
+        S3FileSplitOutput result = new S3FileSplitOutput();
         assertDoesNotThrow(() -> {
             handler.handleResult(testInput, result);
         });

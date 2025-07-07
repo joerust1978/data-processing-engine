@@ -15,8 +15,6 @@ public class S3FileProcessorOutputTest {
         
         assertNotNull(output);
         assertNull(output.getOutputFile());
-        assertNull(output.getTaskToken());
-        assertNull(output.getTaskName());
     }
 
     @Test
@@ -31,27 +29,6 @@ public class S3FileProcessorOutputTest {
         
         assertNotNull(output);
         assertEquals(outputFile, output.getOutputFile());
-        assertNull(output.getTaskToken());
-        assertNull(output.getTaskName());
-    }
-
-    @Test
-    public void testConstructorWithAllFields() {
-        S3File outputFile = S3File.builder()
-                .bucket("test-bucket")
-                .fileKey("test-key")
-                .gzipped(false)
-                .pgpEncrypted(false)
-                .build();
-        String taskToken = "test-task-token";
-        String taskName = "test-task-name";
-        
-        S3FileProcessorOutput output = new S3FileProcessorOutput(taskToken, taskName, outputFile);
-        
-        assertNotNull(output);
-        assertEquals(outputFile, output.getOutputFile());
-        assertEquals(taskToken, output.getTaskToken());
-        assertEquals(taskName, output.getTaskName());
     }
 
     @Test
@@ -66,24 +43,6 @@ public class S3FileProcessorOutputTest {
         
         output.setOutputFile(outputFile);
         assertEquals(outputFile, output.getOutputFile());
-    }
-
-    @Test
-    public void testSetTaskToken() {
-        S3FileProcessorOutput output = new S3FileProcessorOutput();
-        String taskToken = "test-task-token";
-        
-        output.setTaskToken(taskToken);
-        assertEquals(taskToken, output.getTaskToken());
-    }
-
-    @Test
-    public void testSetTaskName() {
-        S3FileProcessorOutput output = new S3FileProcessorOutput();
-        String taskName = "test-task-name";
-        
-        output.setTaskName(taskName);
-        assertEquals(taskName, output.getTaskName());
     }
 
     @Test
@@ -107,11 +66,9 @@ public class S3FileProcessorOutputTest {
                 .pgpEncrypted(false)
                 .build();
         
-        S3FileProcessorOutput output1 = new S3FileProcessorOutput("token1", "name1", outputFile1);
-        S3FileProcessorOutput output2 = new S3FileProcessorOutput("token1", "name1", outputFile2);
-        S3FileProcessorOutput output3 = new S3FileProcessorOutput("token2", "name1", outputFile1);
-        S3FileProcessorOutput output4 = new S3FileProcessorOutput("token1", "name2", outputFile1);
-        S3FileProcessorOutput output5 = new S3FileProcessorOutput("token1", "name1", outputFile3);
+        S3FileProcessorOutput output1 = new S3FileProcessorOutput(outputFile1);
+        S3FileProcessorOutput output2 = new S3FileProcessorOutput(outputFile2);
+        S3FileProcessorOutput output3 = new S3FileProcessorOutput(outputFile3);
         
         // Same object
         assertEquals(output1, output1);
@@ -120,9 +77,7 @@ public class S3FileProcessorOutputTest {
         assertEquals(output1, output2);
         
         // Different objects
-        assertNotEquals(output1, output3); // different taskToken
-        assertNotEquals(output1, output4); // different taskName
-        assertNotEquals(output1, output5); // different outputFile
+        assertNotEquals(output1, output3); // different outputFile
         
         // Null comparison
         assertNotEquals(null, output1);
@@ -146,8 +101,8 @@ public class S3FileProcessorOutputTest {
                 .pgpEncrypted(false)
                 .build();
         
-        S3FileProcessorOutput output1 = new S3FileProcessorOutput("token1", "name1", outputFile1);
-        S3FileProcessorOutput output2 = new S3FileProcessorOutput("token1", "name1", outputFile2);
+        S3FileProcessorOutput output1 = new S3FileProcessorOutput(outputFile1);
+        S3FileProcessorOutput output2 = new S3FileProcessorOutput(outputFile2);
         
         // Equal objects should have equal hash codes
         assertEquals(output1.hashCode(), output2.hashCode());
@@ -164,14 +119,12 @@ public class S3FileProcessorOutputTest {
                 .gzipped(false)
                 .pgpEncrypted(false)
                 .build();
-        S3FileProcessorOutput output = new S3FileProcessorOutput("test-token", "test-name", outputFile);
+        S3FileProcessorOutput output = new S3FileProcessorOutput(outputFile);
         
         String result = output.toString();
         
         assertNotNull(result);
         assertTrue(result.contains("S3FileProcessorOutput"));
-        assertTrue(result.contains("taskToken='test-token'"));
-        assertTrue(result.contains("taskName='test-name'"));
         assertTrue(result.contains("outputFile="));
     }
 
@@ -183,8 +136,6 @@ public class S3FileProcessorOutputTest {
         
         assertNotNull(result);
         assertTrue(result.contains("S3FileProcessorOutput"));
-        assertTrue(result.contains("taskToken='null'"));
-        assertTrue(result.contains("taskName='null'"));
         assertTrue(result.contains("outputFile=null"));
     }
 } 

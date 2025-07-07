@@ -75,11 +75,7 @@ public class S3FileProcessorLambdaHandlerTest {
                 int bytesRead = s3ObjectStream.read(buffer);
                 s3ObjectStream.close();
                 
-                return new S3FileProcessorOutput(
-                    input.getTaskToken(),
-                    input.getTaskName(),
-                    input.getOutputFile()
-                );
+                return new S3FileProcessorOutput(input.getOutputFile());
             } catch (IOException e) {
                 throw new DataProcessingException("Failed to process S3 object", e);
             }
@@ -114,8 +110,6 @@ public class S3FileProcessorLambdaHandlerTest {
         
         // Assert
         assertNotNull(result);
-        assertEquals("test-token", result.getTaskToken());
-        assertEquals("test-task", result.getTaskName());
         assertEquals(outputFile, result.getOutputFile());
         
         verify(s3Client).getObject(any(GetObjectRequest.class));
@@ -143,8 +137,6 @@ public class S3FileProcessorLambdaHandlerTest {
         
         // Assert
         assertNotNull(result);
-        assertEquals("test-token", result.getTaskToken());
-        assertEquals("test-task", result.getTaskName());
         assertEquals(outputFile, result.getOutputFile());
         
         verify(s3Client).getObject(any(GetObjectRequest.class));
@@ -170,8 +162,6 @@ public class S3FileProcessorLambdaHandlerTest {
         
         // Assert
         assertNotNull(result);
-        assertEquals("test-token", result.getTaskToken());
-        assertEquals("test-task", result.getTaskName());
         assertEquals(outputFile, result.getOutputFile());
         
         verify(s3Client).getObject(any(GetObjectRequest.class));
@@ -203,8 +193,6 @@ public class S3FileProcessorLambdaHandlerTest {
         
         // Assert
         assertNotNull(result);
-        assertEquals("test-token", result.getTaskToken());
-        assertEquals("test-task", result.getTaskName());
         assertEquals(outputFile, result.getOutputFile());
         
         verify(s3Client).getObject(any(GetObjectRequest.class));
@@ -330,8 +318,6 @@ public class S3FileProcessorLambdaHandlerTest {
         
         // Assert
         assertNotNull(result);
-        assertEquals("test-token", result.getTaskToken());
-        assertEquals("test-task", result.getTaskName());
         assertEquals(outputFile, result.getOutputFile());
         
         verify(s3Client).getObject(any(GetObjectRequest.class));
